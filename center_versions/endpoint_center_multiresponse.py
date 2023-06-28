@@ -43,57 +43,6 @@ def chat():
     return jsonify({"response": response})
 
 
-def calculate_score(messages, responses, timeout=10):
-    if type(responses) == str:
-        responses = [responses]
-    params = {}
-
-    params["roles"] = [message["role"] for message in messages]
-    params["messages"] = [message["content"] for message in messages]    
-    params["successful_completions"] = responses
-    response = requests.get(get_reward_endpoint(), params=params, timeout=timeout)
-
-    scores = response.text.split("[")[1].split("]")[0]
-    float_list = [float(x) for x in scores.split(",")]
-
-    return float_list
-
-
-def get_highest_score_response(request_str):
-    highest_score = float("-inf")
-    highest_score_response = None
-
-    for response in memory[request_str]["all_replies"].keys():
-        score = memory[request_str]["all_replies"][response].get("score", -1)
-        if score >= highest_score:
-            highest_score = score
-            highest_score_response = response
-
-    return highest_score_response, memory[request_str]["all_replies"][highest_score_response]
-
-
-def get_reward_endpoint():
-    global reward_endpoint_index
-    with lock:
-        reward_endpoint_index = (reward_endpoint_index + 1) % len(reward_endpoints)
-        url = reward_endpoints[reward_endpoint_index]
-        print("scoring url", url)
-        return url
-
-def complete_sentences(text):
-    # Split the text into sentences.
-    # This regular expression splits the text by sentence-ending punctuation (. ! ?),
-    # and includes the punctuation and any trailing spaces in the resulting list.
-    sentences = re.split('(?<=[.!?]) +', text)
-    
-    # If the last sentence doesn't end with a punctuation mark, remove it.
-    if sentences[-1][-1] not in '.!?':
-        print("Removed last sentence:", ' '.join(sentences))
-        sentences = sentences[:-1]
-        
-    
-    # Join the sentences back together into a single string.
-    return ' '.join(sentences)
 
 
 def call_openai(messages, model_name = "gpt-3.5-turbo", temperature = 0.1, max_tokens = 200, top_p = 0.1):
@@ -121,10 +70,8 @@ class Get_And_Score():
         self.model_prompts = {
 
             "openai_3":"Reference back to the question, concise, and demonstrate a clear understanding of the topic.\n\n",
-            "openai_4":"Write a very short 1-2 sentence long yet accurate answer to my question:\n\n",
             
             "openai_question":"",
-            "openai_question_2":"",
 
             }
         
@@ -151,7 +98,7 @@ class Get_And_Score():
         start_time = time.time()
         
         if "openai" in model_name:
-            responses = [call_openai(messages_for_generation, model_name="gpt-3.5-turbo-0613", temperature=0.7, top_p=0.9)]
+            responses = [call_openai(messages_for_generation, model_name="gpt-3.5-turbo", temperature=0.7, top_p=0.9)]
 
 
             
@@ -161,18 +108,8 @@ class Get_And_Score():
                 memory[request_str]["all_replies"][resp] = {"score":estimated_score,"model":model_name, "generation_time":generation_time}
                 all_responses.append(resp)
     
-        start_scoring_time=time.time()
-        if score:
-            resp_scores = calculate_score(messages, responses, 10)
-            scoring_time = str(time.time()-start_scoring_time)[:6]
-            for i in range(len(responses)):
-                resp=responses[i]
-                with lock:
-                    memory[request_str]["all_replies"][resp]["score"] = resp_scores[i]
-                    memory[request_str]["all_replies"][resp]["scoring_time"] = scoring_time            
-        scoring_time = str(time.time()-start_scoring_time)[:6]
         
-        print("Model", model_name, "Generation time", generation_time, "Scoring time", scoring_time)
+        print("Model", model_name, "Generation time", generation_time)
  
 
 
@@ -185,8 +122,7 @@ def generate_replies(messages, request_string):
 
             
             all_threads.append(threading.Thread(target=response_generator.forward, args=(messages, request_string, "openai_question",True,0.21)))
-            all_threads.append(threading.Thread(target=response_generator.forward, args=(messages, request_string, "openai_question",True,0.2)))
-            all_threads.append(threading.Thread(target=response_generator.forward, args=(messages, request_string, "openai_question_2",True,0.1)))
+
 
 
             for t in all_threads:
@@ -213,7 +149,6 @@ def generate_replies(messages, request_string):
             all_threads = []
 
             all_threads.append(threading.Thread(target=response_generator.forward, args=(messages, request_string, "openai_1",True,0.5)))
-            all_threads.append(threading.Thread(target=response_generator.forward, args=(messages, request_string, "openai_2",True,0.5)))
 
             
             for t in all_threads:
@@ -319,9 +254,6 @@ if __name__ == "__main__":
 
     response_generator = Get_And_Score()
     
-    #URLs for to reward model
-    reward_endpoints = []
-    reward_endpoint_index=0
     
     openai.api_key = args.openai_api_key
     app.run(host="0.0.0.0", port=8008, threaded=True)
