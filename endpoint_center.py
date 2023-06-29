@@ -130,7 +130,7 @@ def generate_replies(messages, request_string):
         with lock:
             memory[request_string]["times"]["start_gen_time"] =time.time()
 
-        if "Ask one relevant and insightful question about the preceding context." in  messages[-1]["content"] or "Ask a follow up question." in messages[-1]["content"] or "Ask me a follow-up question.":
+        if "Ask one relevant and insightful question about the preceding context." in  messages[-1]["content"] or "Ask a follow up question." in messages[-1]["content"]:
             all_threads = []
 
             
