@@ -36,15 +36,16 @@ def chat():
     # Get messages from the request
     
     messages = request_data.get("messages", [])
-    n = request_data.get('n', 4)
+    n = request_data.get('n', 1)
 
     # Call the forward function and get the response
     try:
         response = miner.forward(messages, num_replies = n)
     except:
         traceback.print_exc(file=sys.stderr)
-        response = ["That is an excellent question..."]
-
+        return "An error occured"
+    if len(response) == 1:
+        response = response[0]
     # Return the response
     return jsonify({"response": response})
 
