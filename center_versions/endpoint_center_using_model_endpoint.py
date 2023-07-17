@@ -70,9 +70,7 @@ class Get_And_Score():
     def __init__(self):
         self.model_prompts = {
 
-            "openai_1":"Reference back to the question, concise, and demonstrate a clear understanding of the topic.\n\n",
-            
-            "openai_question":"",
+            "open_source_model":"Reference back to the question, concise, and demonstrate a clear understanding of the topic.\n\n",
 
             }
         
