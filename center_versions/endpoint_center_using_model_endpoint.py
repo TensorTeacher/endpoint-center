@@ -1,7 +1,6 @@
 import argparse
 from typing import Dict, List
 from flask import Flask, request, jsonify
-import openai
 import traceback
 import sys
 import time
@@ -11,8 +10,7 @@ import copy
 import threading
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="Run API with OpenAI parameters.")
-    parser.add_argument("--openai_api_key", required=True, help="OpenAI API key")
+    parser = argparse.ArgumentParser(description="Run API with parameters.")
     parser.add_argument("--auth_token", default="access_token_to_this_server", help="Authentication token")
     return parser.parse_args()
 
@@ -254,5 +252,4 @@ if __name__ == "__main__":
     response_generator = Get_And_Score()
     
     
-    openai.api_key = args.openai_api_key
     app.run(host="0.0.0.0", port=8008, threaded=True)
